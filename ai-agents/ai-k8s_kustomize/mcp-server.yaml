@@ -71,6 +71,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: mcp-server
+  namespace: ai-agents
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
