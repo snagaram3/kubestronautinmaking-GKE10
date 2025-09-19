@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mcp-server
+  name: a2a-orchestrator
   namespace: ai-agents
   labels:
-    app: mcp-server
-    component: ai-backend
+    app: a2a-orchestrator
+    component: ai-orchestrator
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: mcp-server
+      app: a2a-orchestrator
   template:
     metadata:
       labels:
-        app: mcp-server
-        component: ai-backend
+        app: a2a-orchestrator
+        component: ai-orchestrator
     spec:
       containers:
-      - name: mcp-server
-        image: gcr.io/hackgkfinalv1/mcp-server:hackathon
+      - name: a2a-orchestrator
+        image: gcr.io/hackgkfinalv1/a2a-orchestrator:hackathon
         ports:
-        - containerPort: 8080
+        - containerPort: 8081
           name: http
         env:
         - name: GEMINI_API_KEY
@@ -30,7 +30,7 @@ spec:
               name: ai-secrets
               key: GEMINI_API_KEY
         - name: PORT
-          value: "8080"
+          value: "8081"
         resources:
           requests:
             cpu: 200m
@@ -40,48 +40,29 @@ spec:
             memory: 1Gi
         livenessProbe:
           httpGet:
-            path: /health
-            port: 8080
+            path: /status
+            port: 8081
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
-            path: /health
-            port: 8080
+            path: /status
+            port: 8081
           initialDelaySeconds: 5
           periodSeconds: 5
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: mcp-server
+  name: a2a-orchestrator
   namespace: ai-agents
   labels:
-    app: mcp-server
+    app: a2a-orchestrator
 spec:
   type: LoadBalancer
   selector:
-    app: mcp-server
+    app: a2a-orchestrator
   ports:
-  - port: 8080
-    targetPort: 8080
+  - port: 8081
+    targetPort: 8081
     name: http
----
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: mcp-server
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: mcp-server
-  minReplicas: 1
-  maxReplicas: 10
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 50     
