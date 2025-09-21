@@ -1,0 +1,96 @@
+# microservice-monitoring-examples.yaml
+# Examples of how to configure your microservices for Prometheus monitoring
+
+# Option 1: Using Pod Annotations (for existing deployments)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-microservice
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-microservice
+  template:
+    metadata:
+      labels:
+        app: my-microservice
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: my-microservice
+        image: my-microservice:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8081
+          name: metrics
+---
+# Option 2: Using Service with labels for ServiceMonitor
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-microservice-svc
+  namespace: default
+  labels:
+    app: my-microservice
+    monitoring: "enabled"  # This label is used by ServiceMonitor
+spec:
+  selector:
+    app: my-microservice
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+  - name: metrics
+    port: 8081
+    targetPort: 8081
+---
+# Option 3: Custom ServiceMonitor for specific microservice
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: my-specific-microservice-monitor
+  namespace: monitoring
+  labels:
+    app: my-specific-microservice
+spec:
+  selector:
+    matchLabels:
+      app: my-specific-microservice
+  endpoints:
+  - port: metrics
+    interval: 15s
+    path: /actuator/prometheus  # For Spring Boot apps
+  - port: metrics
+    interval: 15s
+    path: /metrics  # Standard Prometheus endpoint
+  namespaceSelector:
+    matchNames:
+    - default
+    - microservices
+---
+# Example Ingress for microservice (if needed for debugging)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-microservice-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+  - host: my-microservice.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-microservice-svc
+            port:
+              number: 80
