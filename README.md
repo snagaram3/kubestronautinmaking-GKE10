@@ -182,6 +182,18 @@ This page walks you through the steps required to deploy the [Online Boutique](h
     cd microservices-demo/terraform
     ```
 
+Set the Google Cloud project and region and ensure the Google Kubernetes Engine API is enabled.
+```
+export PROJECT_ID=<PROJECT_ID>
+export REGION=us-central1
+gcloud services enable container.googleapis.com \
+  --project=${PROJECT_ID}
+  ```
+
+  1. gcloud auth login
+1. gcloud config set project kubestronautinmaking
+2. gcloud auth application-default login
+
 1. Open the `terraform.tfvars` file and replace `<project_id_here>` with the [GCP Project ID](https://cloud.google.com/resource-manager/docs/creating-managing-projects?hl=en#identifying_projects) for the `gcp_project_id` variable.
 
 1. (Optional) If you want to provision a [Google Cloud Memorystore (Redis)](https://cloud.google.com/memorystore) instance, you can change the value of `memorystore = false` to `memorystore = true` in this `terraform.tfvars` file.
