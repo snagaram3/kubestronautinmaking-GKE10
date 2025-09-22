@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-manager-agent
+  labels:
+    app: order-manager-agent
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order-manager-agent
+  template:
+    metadata:
+      labels:
+        app: order-manager-agent
+    spec:
+      containers:
+      - name: order-manager-agent
+        image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/boutique-ai-repo/order-manager-agent:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PROJECT_ID
+          value: "${PROJECT_ID}"
+        - name: REGION
+          value: "${REGION}"
+        - name: ORDER_MANAGEMENT_MCP_ENDPOINT
+          value: "order-management-mcp:8000"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-manager-agent
+spec:
+  selector:
+    app: order-manager-agent
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP

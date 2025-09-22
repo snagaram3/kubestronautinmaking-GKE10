@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-management-mcp
+  labels:
+    app: order-management-mcp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: order-management-mcp
+  template:
+    metadata:
+      labels:
+        app: order-management-mcp
+    spec:
+      containers:
+      - name: order-management-mcp
+        image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/boutique-ai-repo/order-management-mcp:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: CHECKOUT_SERVICE_ENDPOINT
+          value: "checkoutservice:5050"
+        - name: SHIPPING_SERVICE_ENDPOINT
+          value: "shippingservice:50051"
+        - name: PAYMENT_SERVICE_ENDPOINT
+          value: "paymentservice:50051"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-management-mcp
+spec:
+  selector:
+    app: order-management-mcp
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP
