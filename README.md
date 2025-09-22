@@ -11,7 +11,7 @@ kubestronautinmaking-GKE10
 
 AI-Enhanced Online Boutique - Production Architecture
 
-![Alt text](./project_architecture.svg)
+![Alt text](./project_architecture.png)
 
 
 ===============================================================
