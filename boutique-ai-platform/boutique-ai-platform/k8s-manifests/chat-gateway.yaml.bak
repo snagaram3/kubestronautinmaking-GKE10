@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-gateway
+  labels:
+    app: chat-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: chat-gateway
+  template:
+    metadata:
+      labels:
+        app: chat-gateway
+    spec:
+      containers:
+      - name: chat-gateway
+        image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/boutique-ai-repo/chat-gateway:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: CUSTOMER_SERVICE_AGENT_ENDPOINT
+          value: "customer-service-agent:8080"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-gateway
+spec:
+  selector:
+    app: chat-gateway
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: LoadBalancer

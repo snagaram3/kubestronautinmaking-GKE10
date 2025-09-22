@@ -1,0 +1,76 @@
+# Logging ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+data:
+  fluent.conf: |
+    <source>
+      @type kubernetes_metadata
+      @id kubernetes_metadata
+    </source>
+    
+    <filter kubernetes.**>
+      @type grep
+      <regexp>
+        key $.kubernetes.labels.app
+        pattern ^(customer-service-agent|personal-shopper-agent|order-manager-agent|chat-gateway|a2a-network)$
+      </regexp>
+    </filter>
+    
+    <match kubernetes.**>
+      @type google_cloud
+      project_id "#{ENV['PROJECT_ID']}"
+      zone "#{ENV['ZONE']}"
+      vm_name "#{ENV['HOSTNAME']}"
+    </match>
+
+---
+# Monitoring Service Monitor
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-metrics
+  labels:
+    app: ai-metrics
+spec:
+  selector:
+    app: customer-service-agent
+  ports:
+  - port: 9090
+    name: metrics
+---
+# Grafana Dashboard ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-dashboard
+data:
+  dashboard.json: |
+    {
+      "dashboard": {
+        "title": "AI Customer Experience Platform",
+        "panels": [
+          {
+            "title": "Agent Response Times",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(agent_request_duration_seconds_bucket[5m]))",
+                "legendFormat": "95th percentile"
+              }
+            ]
+          },
+          {
+            "title": "Chat Interactions",
+            "type": "stat", 
+            "targets": [
+              {
+                "expr": "rate(chat_messages_total[5m])",
+                "legendFormat": "Messages per second"
+              }
+            ]
+          }
+        ]
+      }
+    }

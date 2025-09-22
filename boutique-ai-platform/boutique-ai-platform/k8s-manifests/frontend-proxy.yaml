@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  labels:
+    app: frontend-proxy
+data:
+  default.conf: |
+    upstream original_frontend {
+        server frontend:80;
+    }
+    
+    upstream chat_gateway {
+        server chat-gateway:80;
+    }
+    
+    server {
+        listen 80;
+        server_name _;
+        
+        # Health check endpoint
+        location /health {
+            return 200 "Frontend Proxy OK";
+            add_header Content-Type text/plain;
+        }
+        
+        # Route AI API calls to chat gateway
+        location /api/ai-chat {
+            proxy_pass http://chat_gateway/api/ai-chat;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_connect_timeout 10s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
+            proxy_buffering off;
+        }
+        
+        # Proxy all requests to original frontend with AI widget injection
+        location / {
+            proxy_pass http://original_frontend;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_connect_timeout 10s;
+            proxy_read_timeout 30s;
+            
+            # Inject AI widget into the boutique frontend
+            sub_filter '</body>' '<div id="ai-chat-widget" style="position:fixed;bottom:20px;right:20px;z-index:10000;font-family:sans-serif;"><div id="ai-chat-toggle" onclick="toggleAIChat()" style="background:#4285f4;color:white;padding:15px 25px;border-radius:30px;cursor:pointer;box-shadow:0 8px 25px rgba(66,133,244,0.4);font-weight:bold;">🤖 AI Assistant</div><div id="ai-chat-window" style="display:none;position:absolute;bottom:70px;right:0;width:350px;height:450px;background:white;border-radius:15px;box-shadow:0 20px 60px rgba(0,0,0,0.15);flex-direction:column;"><div style="background:#4285f4;color:white;padding:20px;display:flex;justify-content:space-between;align-items:center;border-radius:15px 15px 0 0;"><h3 style="margin:0;font-size:16px;">AI Shopping Assistant</h3><span onclick="toggleAIChat()" style="cursor:pointer;font-size:20px;">&times;</span></div><div id="ai-chat-messages" style="flex:1;overflow-y:auto;padding:15px;background:#fafafa;"><div style="background:#f1f3f4;padding:12px;border-radius:15px;margin-bottom:10px;">Hi! I can help you find products, track orders, and answer questions. What can I do for you?</div></div><div style="padding:15px;border-top:1px solid #e0e0e0;"><div style="display:flex;gap:8px;"><input type="text" id="ai-chat-input" placeholder="Ask me anything..." style="flex:1;padding:12px;border:1px solid #e0e0e0;border-radius:20px;outline:none;"><button onclick="sendAIMessage()" style="background:#4285f4;color:white;border:none;padding:12px 20px;border-radius:20px;cursor:pointer;">Send</button></div></div></div></div><script>let aiChatOpen=false;let conversationId="conv_"+Date.now();function toggleAIChat(){const w=document.getElementById("ai-chat-window");aiChatOpen=!aiChatOpen;w.style.display=aiChatOpen?"flex":"none";}function addAIMessage(content,type){const m=document.getElementById("ai-chat-messages");const d=document.createElement("div");d.style.cssText="padding:12px;border-radius:15px;margin-bottom:10px;"+(type==="user"?"background:#4285f4;color:white;margin-left:15%;":"background:#f1f3f4;margin-right:15%;white-space:pre-line;");d.textContent=content;m.appendChild(d);m.scrollTop=m.scrollHeight;}async function sendAIMessage(){const input=document.getElementById("ai-chat-input");const message=input.value.trim();if(!message)return;addAIMessage(message,"user");input.value="";try{const response=await fetch("/api/ai-chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:message,conversation_id:conversationId})});const data=await response.json();addAIMessage(data.response,"ai");}catch(error){addAIMessage("Sorry, I had trouble processing that. Please try again.","ai");}}document.getElementById("ai-chat-input").addEventListener("keypress",function(e){if(e.key==="Enter")sendAIMessage();});</script></body>';
+            sub_filter_once on;
+            sub_filter_types text/html;
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-proxy
+  labels:
+    app: frontend-proxy
+    tier: ai
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend-proxy
+  template:
+    metadata:
+      labels:
+        app: frontend-proxy
+        tier: ai
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-proxy
+  labels:
+    app: frontend-proxy
+    tier: ai
+spec:
+  selector:
+    app: frontend-proxy
+  ports:
+  - port: 80
+    targetPort: 80
+  type: LoadBalancer

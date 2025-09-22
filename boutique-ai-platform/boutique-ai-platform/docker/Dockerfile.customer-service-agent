@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the agent file
+COPY agents/customer_service_agent.py .
+
+# Copy gRPC proto files if they exist
+#COPY protos/ ./protos/ 2>/dev/null || true
+# Copy protos only if directory exists
+COPY protos* ./protos/
+
+EXPOSE 8080
+
+# Use python directly to run the module
+CMD ["python", "customer_service_agent.py"]
