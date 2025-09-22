@@ -2,6 +2,145 @@
 kubestronautinmaking-GKE10
 
 ╔════════════════════════════════════════════════════════════════╗
+║      Steps to integrate the Ai-Agents                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+╔════════════════════════════════════════════════════════════════╗
+║                Architecture                                    ║
+╚════════════════════════════════════════════════════════════════╝
+
+AI-Enhanced Online Boutique - Production Architecture
+===============================================================
+
+┌─────────────┐     ┌──────────────┐     ┌─────────────────────┐     ┌────────────────┐
+│    Users    │────▶│Load Balancer │────▶│   Frontend Proxy    │────▶│   Original     │
+│ (Internet)  │     │   (GCP LB)   │     │   (AI Gateway)      │     │   Frontend     │
+└─────────────┘     └──────────────┘     │ • Widget Injection  │     │   (React)      │
+                                         │ • API Routing       │     └────────────────┘
+                                         └─────────┬───────────┘
+                                                   │ /api/ai-chat
+                                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                           AI Enhancement Layer                                           │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│ ┌───────────────┐   ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐   │
+│ │ Chat Gateway  │──▶│ Customer Service│──▶│ Personal Shopper│   │ Order Manager   │   │
+│ │ (Load Balance)│   │     Agent       │   │     Agent       │   │     Agent       │   │
+│ │ Port: 80      │   │ • Intent Class. │   │ • Product AI    │   │ • Tracking AI   │   │
+│ └───────────────┘   │ • Query Routing │   │ • Recommends    │   │ • Status Update │   │
+│                     └─────────┬───────┘   └─────────────────┘   └─────────────────┘   │
+│                               │                     ▲                     ▲           │
+│                               ▼                     │                     │           │
+│ ┌───────────────┐   ┌─────────────────┐           ┌─────────────────────────────┐     │
+│ │  A2A Network  │◄──│  MCP Servers    │           │      Agent Communication   │     │
+│ │ (WebSocket)   │   │ • Product MCP   │           │      (WebSocket/HTTP)       │     │
+│ │ • Agent Comm  │   │ • Order MCP     │           └─────────────────────────────┘     │
+│ └───────────────┘   │ • Data Bridge   │                                               │
+│                     └─────────┬───────┘                                               │
+└─────────────────────────────────┼─────────────────────────────────────────────────────┘
+                                  │ gRPC Bridge
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                      Original Online Boutique Microservices                            │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐       │
+│ │  Product    │ │    Cart     │ │  Checkout   │ │  Payment    │ │  Shipping   │       │
+│ │  Catalog    │ │  Service    │ │  Service    │ │  Service    │ │  Service    │       │
+│ │ Port: 3550  │ │ Port: 7070  │ │ Port: 5050  │ │ Port: 50051 │ │ Port: 50051 │       │
+│ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘       │
+│                                                                                         │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐       │
+│ │  Currency   │ │Recommendation│ │   Email     │ │     Ad      │ │ Redis Cache │       │
+│ │  Service    │ │   Service    │ │  Service    │ │  Service    │ │ (Session)   │       │
+│ │ Port: 7000  │ │ Port: 8080   │ │ Port: 8080  │ │ Port: 9555  │ │ Port: 6379  │       │
+│ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘       │
+│                                                                                         │
+│                            All Services: gRPC Communication                            │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                          │
+                                          ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                    Google Kubernetes Engine (Autopilot)                                │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│ ┌─────────────────────────────────┐     ┌─────────────────────────────────┐             │
+│ │         Node Pool 1             │     │         Node Pool 2             │             │
+│ │    (Original Services)          │     │       (AI Services)             │             │
+│ │                                 │     │                                 │             │
+│ │ [Pod] [Pod] [Pod] [Pod] [Pod]  │     │ [Pod] [Pod] [Pod] [Pod] [Pod]  │             │
+│ │ [Pod] [Pod] [Pod] [Pod] [Pod]  │     │ [Pod] [Pod]                     │             │
+│ │                                 │     │                                 │             │
+│ │ • ProductCatalog                │     │ • Chat Gateway                  │             │
+│ │ • Cart Service                  │     │ • Customer Service Agent        │             │
+│ │ • Checkout Service              │     │ • Personal Shopper Agent        │             │
+│ │ • Payment Service               │     │ • Order Manager Agent           │             │
+│ │ • Shipping Service              │     │ • A2A Network                   │             │
+│ │ • Currency Service              │     │ • MCP Servers                   │             │
+│ │ • Recommendation Service        │     │ • Frontend Proxy                │             │
+│ │ • Email Service                 │     │                                 │             │
+│ │ • Ad Service                    │     │                                 │             │
+│ │ • Redis Cache                   │     │                                 │             │
+│ │ • Original Frontend             │     │                                 │             │
+│ └─────────────────────────────────┘     └─────────────────────────────────┘             │
+│                                                                                         │
+│ ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│ │                          Auto-scaling Features                                 │   │
+│ │ • Horizontal Pod Autoscaler (HPA)                                             │   │
+│ │ • Vertical Pod Autoscaler (VPA)                                               │   │
+│ │ • Cluster Autoscaler                                                          │   │
+│ │ • Resource Requests: ~300m CPU, ~1Gi Memory                                  │   │
+│ │ • Load Balancer Services for External Access                                 │   │
+│ └─────────────────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+Data Flow:
+==========
+1. User ──HTTP──▶ Load Balancer ──▶ Frontend Proxy
+2. Frontend Proxy ──▶ Original Frontend (Normal Traffic)
+3. Frontend Proxy ──/api/ai-chat──▶ Chat Gateway ──▶ Customer Service Agent
+4. Customer Service Agent ──Intent Classification──▶ Specialized AI Agents
+5. AI Agents ──MCP Protocol──▶ MCP Servers ──gRPC──▶ Microservices
+6. Response ──▶ AI Agents ──▶ Chat Gateway ──▶ Frontend Proxy ──▶ User
+
+Communication Protocols:
+========================
+┌─────────────────┬─────────────────┬──────────────────────┐
+│    Component    │    Protocol     │       Purpose        │
+├─────────────────┼─────────────────┼──────────────────────┤
+│ User ↔ Frontend │      HTTP       │   Web Interface      │
+│ Frontend ↔ AI   │   HTTP/REST     │   API Calls          │
+│ AI Agents       │   WebSocket     │ Agent Communication  │
+│ MCP ↔ Services  │     gRPC        │ Microservice Access  │
+│ Internal Mesh   │   HTTP/gRPC     │ Service Mesh         │
+└─────────────────┴─────────────────┴──────────────────────┘
+
+Technology Stack:
+=================
+• Frontend: React/HTML + AI Widget Injection
+• AI Agents: Python FastAPI + Google Gemini
+• Original Services: Go/Java/C# + gRPC
+• Communication: gRPC + WebSocket + HTTP REST
+• Data Storage: Redis Cache + Ephemeral
+• Infrastructure: GKE Autopilot + Docker Containers
+• Load Balancing: Google Cloud Load Balancer
+• Monitoring: Kubernetes Health Checks + Logging
+
+Key Features:
+=============
+✅ Non-invasive AI Enhancement (No Core Code Changes)
+✅ Real-time Product Search & Intelligent Recommendations  
+✅ Multi-Agent Conversation Handling with Intent Classification
+✅ Order Tracking & Cart Management Integration
+✅ Production-Ready Scalability & Auto-scaling
+✅ Fault-Tolerant with Service Health Monitoring
+✅ Secure Service Mesh Communication
+✅ Resource-Optimized Deployment
+
+
+
+╔════════════════════════════════════════════════════════════════╗
 ║      Terraform to build the kubernetes cluster.                ║
 ╚════════════════════════════════════════════════════════════════╝
 
@@ -199,13 +338,6 @@ To remove all deployed resources:
 Or manually delete the namespace:
 
 kubectl delete namespace ai-agents
-╔════════════════════════════════════════════════════════════════╗
-║      Steps to integrate the Ai-Agents                          ║
-╚════════════════════════════════════════════════════════════════╝
-
-╔════════════════════════════════════════════════════════════════╗
-║                Architecture                                    ║
-╚════════════════════════════════════════════════════════════════╝
 
 
 ╔════════════════════════════════════════════════════════════════╗

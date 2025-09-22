@@ -1,0 +1,262 @@
+<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="800" fill="#f8f9fa"/>
+  
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#333">
+    AI-Enhanced Online Boutique - Production Architecture
+  </text>
+  
+  <!-- Internet/Users -->
+  <g>
+    <circle cx="100" cy="100" r="30" fill="#4285f4" stroke="#1a73e8" stroke-width="2"/>
+    <text x="100" y="106" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white" font-weight="bold">Users</text>
+    <text x="100" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">Internet</text>
+  </g>
+  
+  <!-- Load Balancer -->
+  <g>
+    <rect x="200" y="80" width="80" height="40" fill="#34a853" stroke="#0f9d58" stroke-width="2" rx="5"/>
+    <text x="240" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white" font-weight="bold">Load Balancer</text>
+  </g>
+  
+  <!-- Frontend Proxy (AI Gateway) -->
+  <g>
+    <rect x="320" y="60" width="100" height="80" fill="#ff6d01" stroke="#e8710a" stroke-width="2" rx="5"/>
+    <text x="370" y="90" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="white" font-weight="bold">Frontend Proxy</text>
+    <text x="370" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">(AI Gateway)</text>
+    <text x="370" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="white">Widget Injection</text>
+    <text x="370" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="white">API Routing</text>
+  </g>
+  
+  <!-- Original Boutique Frontend -->
+  <g>
+    <rect x="480" y="80" width="80" height="40" fill="#9aa0a6" stroke="#5f6368" stroke-width="2" rx="5"/>
+    <text x="520" y="95" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Original</text>
+    <text x="520" y="108" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Frontend</text>
+  </g>
+  
+  <!-- AI Components Section -->
+  <g>
+    <!-- AI Section Background -->
+    <rect x="300" y="180" width="400" height="180" fill="#e8f0fe" stroke="#4285f4" stroke-width="2" rx="10" stroke-dasharray="5,5"/>
+    <text x="500" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#1a73e8" font-weight="bold">AI Enhancement Layer</text>
+    
+    <!-- Chat Gateway -->
+    <rect x="320" y="220" width="80" height="50" fill="#4285f4" stroke="#1a73e8" stroke-width="2" rx="5"/>
+    <text x="360" y="240" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white" font-weight="bold">Chat</text>
+    <text x="360" y="253" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white" font-weight="bold">Gateway</text>
+    <text x="360" y="265" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="white">Load Balancer</text>
+    
+    <!-- Customer Service Agent -->
+    <rect x="420" y="220" width="90" height="50" fill="#34a853" stroke="#0f9d58" stroke-width="2" rx="5"/>
+    <text x="465" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Customer Service</text>
+    <text x="465" y="248" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Agent</text>
+    <text x="465" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="white">Intent Classification</text>
+    
+    <!-- Personal Shopper Agent -->
+    <rect x="530" y="220" width="80" height="50" fill="#ea4335" stroke="#d33b2c" stroke-width="2" rx="5"/>
+    <text x="570" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Personal</text>
+    <text x="570" y="248" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Shopper</text>
+    <text x="570" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="white">Product AI</text>
+    
+    <!-- Order Manager Agent -->
+    <rect x="320" y="290" width="80" height="50" fill="#fbbc04" stroke="#f9ab00" stroke-width="2" rx="5"/>
+    <text x="360" y="305" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="black" font-weight="bold">Order</text>
+    <text x="360" y="318" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="black" font-weight="bold">Manager</text>
+    <text x="360" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="black">Tracking AI</text>
+    
+    <!-- A2A Network -->
+    <rect x="420" y="290" width="90" height="50" fill="#9aa0a6" stroke="#5f6368" stroke-width="2" rx="5"/>
+    <text x="465" y="305" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">A2A Network</text>
+    <text x="465" y="318" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">(WebSocket)</text>
+    <text x="465" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="white">Agent Communication</text>
+    
+    <!-- MCP Servers -->
+    <rect x="530" y="290" width="80" height="50" fill="#9c27b0" stroke="#7b1fa2" stroke-width="2" rx="5"/>
+    <text x="570" y="305" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">MCP</text>
+    <text x="570" y="318" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Servers</text>
+    <text x="570" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="white">Data Bridge</text>
+  </g>
+  
+  <!-- Original Microservices Section -->
+  <g>
+    <!-- Microservices Section Background -->
+    <rect x="50" y="400" width="700" height="180" fill="#f1f3f4" stroke="#5f6368" stroke-width="2" rx="10"/>
+    <text x="400" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#5f6368" font-weight="bold">Original Online Boutique Microservices (gRPC)</text>
+    
+    <!-- Product Catalog Service -->
+    <rect x="70" y="440" width="80" height="40" fill="#607d8b" stroke="#455a64" stroke-width="2" rx="5"/>
+    <text x="110" y="455" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Product</text>
+    <text x="110" y="468" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Catalog</text>
+    
+    <!-- Cart Service -->
+    <rect x="170" y="440" width="80" height="40" fill="#607d8b" stroke="#455a64" stroke-width="2" rx="5"/>
+    <text x="210" y="455" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Cart</text>
+    <text x="210" y="468" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Service</text>
+    
+    <!-- Checkout Service -->
+    <rect x="270" y="440" width="80" height="40" fill="#607d8b" stroke="#455a64" stroke-width="2" rx="5"/>
+    <text x="310" y="455" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Checkout</text>
+    <text x="310" y="468" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Service</text>
+    
+    <!-- Payment Service -->
+    <rect x="370" y="440" width="80" height="40" fill="#607d8b" stroke="#455a64" stroke-width="2" rx="5"/>
+    <text x="410" y="455" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Payment</text>
+    <text x="410" y="468" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Service</text>
+    
+    <!-- Shipping Service -->
+    <rect x="470" y="440" width="80" height="40" fill="#607d8b" stroke="#455a64" stroke-width="2" rx="5"/>
+    <text x="510" y="455" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Shipping</text>
+    <text x="510" y="468" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Service</text>
+    
+    <!-- Currency Service -->
+    <rect x="70" y="500" width="80" height="40" fill="#607d8b" stroke="#455a64" stroke-width="2" rx="5"/>
+    <text x="110" y="515" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Currency</text>
+    <text x="110" y="528" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Service</text>
+    
+    <!-- Recommendation Service -->
+    <rect x="170" y="500" width="80" height="40" fill="#607d8b" stroke="#455a64" stroke-width="2" rx="5"/>
+    <text x="210" y="515" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Recommend</text>
+    <text x="210" y="528" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Service</text>
+    
+    <!-- Email Service -->
+    <rect x="270" y="500" width="80" height="40" fill="#607d8b" stroke="#455a64" stroke-width="2" rx="5"/>
+    <text x="310" y="515" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Email</text>
+    <text x="310" y="528" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Service</text>
+    
+    <!-- Ad Service -->
+    <rect x="370" y="500" width="80" height="40" fill="#607d8b" stroke="#455a64" stroke-width="2" rx="5"/>
+    <text x="410" y="515" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Ad</text>
+    <text x="410" y="528" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Service</text>
+    
+    <!-- Redis Cart -->
+    <rect x="570" y="440" width="80" height="40" fill="#dc382d" stroke="#b71c1c" stroke-width="2" rx="5"/>
+    <text x="610" y="455" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Redis</text>
+    <text x="610" y="468" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white" font-weight="bold">Cache</text>
+  </g>
+  
+  <!-- GKE Infrastructure -->
+  <g>
+    <rect x="800" y="400" width="350" height="350" fill="#e8f0fe" stroke="#4285f4" stroke-width="2" rx="10"/>
+    <text x="975" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#1a73e8" font-weight="bold">Google Kubernetes Engine (Autopilot)</text>
+    
+    <!-- Node Pool 1 -->
+    <rect x="820" y="440" width="140" height="120" fill="#f8f9fa" stroke="#9aa0a6" stroke-width="1" rx="5"/>
+    <text x="890" y="455" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#5f6368" font-weight="bold">Node Pool 1</text>
+    <text x="890" y="468" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#5f6368">Original Services</text>
+    
+    <!-- Pods in Node Pool 1 -->
+    <circle cx="840" cy="485" r="8" fill="#607d8b"/>
+    <circle cx="860" cy="485" r="8" fill="#607d8b"/>
+    <circle cx="880" cy="485" r="8" fill="#607d8b"/>
+    <circle cx="900" cy="485" r="8" fill="#607d8b"/>
+    <circle cx="920" cy="485" r="8" fill="#607d8b"/>
+    <circle cx="940" cy="485" r="8" fill="#607d8b"/>
+    
+    <circle cx="840" cy="510" r="8" fill="#607d8b"/>
+    <circle cx="860" cy="510" r="8" fill="#607d8b"/>
+    <circle cx="880" cy="510" r="8" fill="#dc382d"/>
+    <circle cx="900" cy="510" r="8" fill="#9aa0a6"/>
+    <circle cx="920" cy="510" r="8" fill="#607d8b"/>
+    <circle cx="940" cy="510" r="8" fill="#607d8b"/>
+    
+    <text x="890" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#5f6368">Microservice Pods</text>
+    
+    <!-- Node Pool 2 -->
+    <rect x="980" y="440" width="140" height="120" fill="#f8f9fa" stroke="#9aa0a6" stroke-width="1" rx="5"/>
+    <text x="1050" y="455" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#5f6368" font-weight="bold">Node Pool 2</text>
+    <text x="1050" y="468" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#5f6368">AI Services</text>
+    
+    <!-- AI Pods in Node Pool 2 -->
+    <circle cx="1000" cy="485" r="8" fill="#4285f4"/>
+    <circle cx="1020" cy="485" r="8" fill="#34a853"/>
+    <circle cx="1040" cy="485" r="8" fill="#ea4335"/>
+    <circle cx="1060" cy="485" r="8" fill="#fbbc04"/>
+    <circle cx="1080" cy="485" r="8" fill="#9aa0a6"/>
+    <circle cx="1100" cy="485" r="8" fill="#9c27b0"/>
+    
+    <circle cx="1000" cy="510" r="8" fill="#ff6d01"/>
+    <circle cx="1020" cy="510" r="8" fill="#ff6d01"/>
+    
+    <text x="1050" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#5f6368">AI Agent Pods</text>
+    
+    <!-- Auto-scaling -->
+    <text x="975" y="580" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#1a73e8" font-weight="bold">Auto-scaling</text>
+    <text x="975" y="595" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5f6368">• Horizontal Pod Autoscaler</text>
+    <text x="975" y="608" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5f6368">• Vertical Pod Autoscaler</text>
+    <text x="975" y="621" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5f6368">• Cluster Autoscaler</text>
+    
+    <!-- Resource Management -->
+    <text x="975" y="650" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#1a73e8" font-weight="bold">Resource Management</text>
+    <text x="975" y="665" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5f6368">• CPU: ~300m total requests</text>
+    <text x="975" y="678" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5f6368">• Memory: ~1Gi total requests</text>
+    <text x="975" y="691" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5f6368">• Storage: Ephemeral</text>
+    
+    <!-- Networking -->
+    <text x="975" y="720" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#1a73e8" font-weight="bold">Networking</text>
+    <text x="975" y="735" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5f6368">• Load Balancer Services</text>
+    <text x="975" y="748" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5f6368">• ClusterIP Internal</text>
+  </g>
+  
+  <!-- Data Flow Arrows -->
+  <!-- User to Load Balancer -->
+  <line x1="130" y1="100" x2="200" y2="100" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Load Balancer to Frontend Proxy -->
+  <line x1="280" y1="100" x2="320" y2="100" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Frontend Proxy to Original Frontend -->
+  <line x1="420" y1="100" x2="480" y2="100" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Frontend Proxy to Chat Gateway -->
+  <line x1="370" y1="140" x2="360" y2="220" stroke="#ff6d01" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Chat Gateway to Customer Service Agent -->
+  <line x1="400" y1="245" x2="420" y2="245" stroke="#4285f4" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Customer Service to other agents -->
+  <line x1="510" y1="245" x2="530" y2="245" stroke="#34a853" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="465" y1="270" x2="465" y2="290" stroke="#34a853" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- MCP to Microservices -->
+  <line x1="570" y1="340" x2="400" y2="440" stroke="#9c27b0" stroke-width="2" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+  
+  <!-- Original Frontend to Microservices -->
+  <line x1="520" y1="120" x2="400" y2="440" stroke="#9aa0a6" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Arrow marker definition -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333"/>
+    </marker>
+  </defs>
+  
+  <!-- Technology Stack Labels -->
+  <g>
+    <text x="50" y="670" font-family="Arial, sans-serif" font-size="12" fill="#333" font-weight="bold">Technology Stack:</text>
+    <text x="50" y="690" font-family="Arial, sans-serif" font-size="10" fill="#666">• Frontend: React/HTML + AI Widget</text>
+    <text x="50" y="705" font-family="Arial, sans-serif" font-size="10" fill="#666">• AI Agents: Python FastAPI + Gemini</text>
+    <text x="50" y="720" font-family="Arial, sans-serif" font-size="10" fill="#666">• Communication: gRPC + WebSocket + HTTP</text>
+    <text x="50" y="735" font-family="Arial, sans-serif" font-size="10" fill="#666">• Data: MCP Protocol + Redis Cache</text>
+    <text x="50" y="750" font-family="Arial, sans-serif" font-size="10" fill="#666">• Infrastructure: GKE Autopilot + Docker</text>
+    
+    <text x="400" y="690" font-family="Arial, sans-serif" font-size="10" fill="#666">• Load Balancing: Google Cloud Load Balancer</text>
+    <text x="400" y="705" font-family="Arial, sans-serif" font-size="10" fill="#666">• Monitoring: Kubernetes Health Checks</text>
+    <text x="400" y="720" font-family="Arial, sans-serif" font-size="10" fill="#666">• Scaling: Horizontal + Vertical Pod Autoscaler</text>
+    <text x="400" y="735" font-family="Arial, sans-serif" font-size="10" fill="#666">• Security: Service Mesh + Network Policies</text>
+    <text x="400" y="750" font-family="Arial, sans-serif" font-size="10" fill="#666">• CI/CD: Google Cloud Build + Artifact Registry</text>
+  </g>
+  
+  <!-- Key Features -->
+  <g>
+    <rect x="800" y="60" width="350" height="120" fill="#f1f3f4" stroke="#5f6368" stroke-width="2" rx="10"/>
+    <text x="975" y="80" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#5f6368" font-weight="bold">Key Features</text>
+    
+    <text x="820" y="100" font-family="Arial, sans-serif" font-size="10" fill="#333" font-weight="bold">✅ Non-invasive AI Enhancement</text>
+    <text x="820" y="115" font-family="Arial, sans-serif" font-size="10" fill="#333" font-weight="bold">✅ Real-time Product Search & Recommendations</text>
+    <text x="820" y="130" font-family="Arial, sans-serif" font-size="10" fill="#333" font-weight="bold">✅ Intelligent Order Tracking & Cart Management</text>
+    <text x="820" y="145" font-family="Arial, sans-serif" font-size="10" fill="#333" font-weight="bold">✅ Multi-Agent Conversation Handling</text>
+    <text x="820" y="160" font-family="Arial, sans-serif" font-size="10" fill="#333" font-weight="bold">✅ Production-Ready Scalability & Monitoring</text>
+  </g>
+</svg>
