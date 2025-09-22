@@ -10,6 +10,10 @@ kubestronautinmaking-GKE10
 ╚════════════════════════════════════════════════════════════════╝
 
 AI-Enhanced Online Boutique - Production Architecture
+
+![Alt text](./project_architecture.svg)
+
+
 ===============================================================
 
 ┌─────────────┐     ┌──────────────┐     ┌─────────────────────┐     ┌────────────────┐
@@ -42,22 +46,22 @@ AI-Enhanced Online Boutique - Production Architecture
                                   │ gRPC Bridge
                                   ▼
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│                      Original Online Boutique Microservices                            │
+│                      Original Online Boutique Microservices                             │
 ├─────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                         │
-│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐       │
-│ │  Product    │ │    Cart     │ │  Checkout   │ │  Payment    │ │  Shipping   │       │
-│ │  Catalog    │ │  Service    │ │  Service    │ │  Service    │ │  Service    │       │
-│ │ Port: 3550  │ │ Port: 7070  │ │ Port: 5050  │ │ Port: 50051 │ │ Port: 50051 │       │
-│ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘       │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐         │
+│ │  Product    │ │    Cart     │ │  Checkout   │ │  Payment    │ │  Shipping   │         │
+│ │  Catalog    │ │  Service    │ │  Service    │ │  Service    │ │  Service    │         │
+│ │ Port: 3550  │ │ Port: 7070  │ │ Port: 5050  │ │ Port: 50051 │ │ Port: 50051 │         │
+│ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘         │
 │                                                                                         │
-│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐       │
-│ │  Currency   │ │Recommendation│ │   Email     │ │     Ad      │ │ Redis Cache │       │
-│ │  Service    │ │   Service    │ │  Service    │ │  Service    │ │ (Session)   │       │
-│ │ Port: 7000  │ │ Port: 8080   │ │ Port: 8080  │ │ Port: 9555  │ │ Port: 6379  │       │
-│ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘       │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐         │
+│ │  Currency   │ │Recommendation│ │   Email     │ │     Ad      │ │ Redis Cache │        │
+│ │  Service    │ │   Service    │ │  Service    │ │  Service    │ │ (Session)   │        │
+│ │ Port: 7000  │ │ Port: 8080   │ │ Port: 8080  │ │ Port: 9555  │ │ Port: 6379  │        │
+│ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘         │
 │                                                                                         │
-│                            All Services: gRPC Communication                            │
+│                            All Services: gRPC Communication                             │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
                                           │
                                           ▼
@@ -69,8 +73,6 @@ AI-Enhanced Online Boutique - Production Architecture
 │ │         Node Pool 1             │     │         Node Pool 2             │             │
 │ │    (Original Services)          │     │       (AI Services)             │             │
 │ │                                 │     │                                 │             │
-│ │ [Pod] [Pod] [Pod] [Pod] [Pod]  │     │ [Pod] [Pod] [Pod] [Pod] [Pod]  │             │
-│ │ [Pod] [Pod] [Pod] [Pod] [Pod]  │     │ [Pod] [Pod]                     │             │
 │ │                                 │     │                                 │             │
 │ │ • ProductCatalog                │     │ • Chat Gateway                  │             │
 │ │ • Cart Service                  │     │ • Customer Service Agent        │             │
@@ -85,14 +87,14 @@ AI-Enhanced Online Boutique - Production Architecture
 │ │ • Original Frontend             │     │                                 │             │
 │ └─────────────────────────────────┘     └─────────────────────────────────┘             │
 │                                                                                         │
-│ ┌─────────────────────────────────────────────────────────────────────────────────┐   │
-│ │                          Auto-scaling Features                                 │   │
-│ │ • Horizontal Pod Autoscaler (HPA)                                             │   │
-│ │ • Vertical Pod Autoscaler (VPA)                                               │   │
-│ │ • Cluster Autoscaler                                                          │   │
-│ │ • Resource Requests: ~300m CPU, ~1Gi Memory                                  │   │
-│ │ • Load Balancer Services for External Access                                 │   │
-│ └─────────────────────────────────────────────────────────────────────────────────┘   │
+│ ┌─────────────────────────────────────────────────────────────────────────────────┐     │
+│ │                          Auto-scaling Features                                  │     │
+│ │ • Horizontal Pod Autoscaler (HPA)                                               │     │
+│ │ • Vertical Pod Autoscaler (VPA)                                                 │     │
+│ │ • Cluster Autoscaler                                                            │     │
+│ │ • Resource Requests: ~300m CPU, ~1Gi Memory                                     │     │
+│ │ • Load Balancer Services for External Access                                    │     │
+│ └─────────────────────────────────────────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 
 Data Flow:
@@ -269,33 +271,16 @@ gcloud services enable \
    compute.googleapis.com
 
 4. 4. Create GKE cluster
-gcloud container clusters create-auto $CLUSTER_NAME --region=$REGION
+./boutique-ai-platform/deploy.sh
 
 5. 5. Get cluster credentials
 gcloud container clusters get-credentials $CLUSTER_NAME --region=$REGION
 
-6. 6. Deploy Online Boutique
-kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/microservices-demo/main/release/kubernetes-manifests.yaml
-
-7. 7. Wait for pods to be ready
-kubectl wait --for=condition=ready pods --all --timeout=300s
-
-8. 8. Get frontend URL
-kubectl get service frontend-external
 
 Deployment Options
 Before running scripts:
 
-chmod +x scripts/*.sh
-
-Option 1: Quick Deploy
-
-./scripts/quick-deploy.sh
-
-Option 2: Step-by-step
-
-./scripts/build-images.sh
-./scripts/deploy-k8s.sh
+chmod +x boutique-ai-platform/deploy.sh
 
 Monitoring & Debugging
 Check service status
@@ -314,28 +299,8 @@ kubectl logs deployment/mcp-server -n ai-agents -f
 kubectl logs deployment/a2a-orchestrator -n ai-agents -f
 kubectl logs deployment/api-gateway -n ai-agents -f
 
-Scale Down Patch:
-
-kubectl patch deployment mcp-server -n ai-agents -p '{"spec":{"replicas":1,"template":{"spec":{"containers":[{"name":"mcp-server","resources":{"requests":{"cpu":"100m","memory":"256Mi"},"limits":{"cpu":"500m","memory":"512Mi"}}}]}}}}'
-
- 
-
-kubectl patch deployment api-gateway -n ai-agents -p '{"spec":{"replicas":1,"template":{"spec":{"containers":[{"name":"api-gateway","resources":{"requests":{"cpu":"50m","memory":"128Mi"},"limits":{"cpu":"200m","memory":"256Mi"}}}]}}}}'
-
- 
-
- 
-
-Fix stuck api-gateway pod
-
-./scripts/fix-ai-widget.sh
-
 Cleanup
-To remove all deployed resources:
-
-./scripts/cleanup.sh
-
-Or manually delete the namespace:
+manually delete the namespace:
 
 kubectl delete namespace ai-agents
 
