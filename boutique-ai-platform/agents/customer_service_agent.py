@@ -1,15 +1,41 @@
 import asyncio
 import json
 import os
-import random
-import grpc
+import logging
 from typing import Dict, List, Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import httpx
 from datetime import datetime
+import httpx
+import grpc
+import sys
 
-# Pydantic models
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Import gRPC stubs
+sys.path.append('/app/protos')
+try:
+    import demo_pb2
+    import demo_pb2_grpc
+    GRPC_AVAILABLE = True
+except ImportError as e:
+    logger.error(f"gRPC imports failed: {e}")
+    GRPC_AVAILABLE = False
+
+# Import Gemini AI
+try:
+    import google.generativeai as genai
+    GOOGLE_AI_KEY = os.getenv('GOOGLE_AI_KEY')
+    if GOOGLE_AI_KEY:
+        genai.configure(api_key=GOOGLE_AI_KEY)
+        GEMINI_AVAILABLE = True
+    else:
+        GEMINI_AVAILABLE = False
+except ImportError:
+    GEMINI_AVAILABLE = False
+
 class ChatRequest(BaseModel):
     query: str
     conversation_id: str
@@ -21,332 +47,341 @@ class ChatResponse(BaseModel):
     intent: str = "general"
 
 class CustomerServiceAgent:
-    def __init__(self, project_id: str, region: str):
-        self.project_id = project_id
-        self.region = region
+    def __init__(self):
         self.agent_id = "customer-service-agent"
+        self.http_client = httpx.AsyncClient()
         
-        # Real microservice endpoints
-        self.services = {
-            "productcatalog": "productcatalogservice:3550",
-            "cart": "cartservice:7070", 
-            "currency": "currencyservice:7000",
-            "recommendation": "recommendationservice:8080"
+        # gRPC connections
+        self.grpc_channels = {}
+        self.grpc_stubs = {}
+        
+        # MCP server endpoints
+        self.mcp_servers = {
+            "product-catalog": "http://product-catalog-mcp:8080"
         }
-    
-    async def get_real_products(self) -> List[Dict]:
-        """Get actual products from ProductCatalogService via HTTP gateway"""
-        try:
-            # Try to connect to productcatalogservice
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                # Use the frontend service as a proxy to get product data
-                response = await client.get("http://frontend:80/")
+        
+        # Microservice endpoints
+        self.microservices = {
+            "productcatalog": "productcatalogservice:3550",
+            "cart": "cartservice:7070"
+        }
+        
+    async def initialize_connections(self):
+        """Initialize all connections"""
+        await self._initialize_grpc_connections()
+        await self._test_mcp_connections()
+        
+    async def _initialize_grpc_connections(self):
+        """Initialize direct gRPC connections to microservices"""
+        if not GRPC_AVAILABLE:
+            return
+            
+        for service_name, endpoint in self.microservices.items():
+            try:
+                channel = grpc.aio.insecure_channel(endpoint)
+                await asyncio.wait_for(channel.channel_ready(), timeout=5.0)
                 
-                if response.status_code == 200:
-                    # Return real product data structure
-                    return [
-                        {
-                            "id": "OLJCESPC7Z",
-                            "name": "Sunglasses",
-                            "description": "Add a modern touch to your outfits with these sleek sunglasses.",
-                            "price": {"currency_code": "USD", "units": 19, "nanos": 990000000},
-                            "categories": ["accessories"],
-                            "picture": "/static/img/products/sunglasses.jpg"
-                        },
-                        {
-                            "id": "66VCHSJNUP", 
-                            "name": "Tank Top",
-                            "description": "Perfectly fitted tank top for summer.",
-                            "price": {"currency_code": "USD", "units": 18, "nanos": 990000000},
-                            "categories": ["clothing"],
-                            "picture": "/static/img/products/tank-top.jpg"
-                        },
-                        {
-                            "id": "1YMWWN1N4O",
-                            "name": "Watch",
-                            "description": "Classic timepiece for the modern professional.", 
-                            "price": {"currency_code": "USD", "units": 109, "nanos": 990000000},
-                            "categories": ["accessories"],
-                            "picture": "/static/img/products/watch.jpg"
-                        },
-                        {
-                            "id": "2ZYFJ3GM2N",
-                            "name": "Vintage Camera Lens",
-                            "description": "Vintage camera lens for professional photography.",
-                            "price": {"currency_code": "USD", "units": 89, "nanos": 990000000},
-                            "categories": ["photography", "vintage"],
-                            "picture": "/static/img/products/camera-lens.jpg"
-                        },
-                        {
-                            "id": "0PUK6V6EV0", 
-                            "name": "Vintage Typewriter",
-                            "description": "Restored vintage typewriter in working condition.",
-                            "price": {"currency_code": "USD", "units": 67, "nanos": 990000000},
-                            "categories": ["vintage", "office"],
-                            "picture": "/static/img/products/typewriter.jpg"
-                        }
-                    ]
-                else:
-                    return []
+                self.grpc_channels[service_name] = channel
+                
+                if service_name == "productcatalog":
+                    self.grpc_stubs[service_name] = demo_pb2_grpc.ProductCatalogServiceStub(channel)
+                elif service_name == "cart":
+                    self.grpc_stubs[service_name] = demo_pb2_grpc.CartServiceStub(channel)
                     
+                logger.info(f"Connected to {service_name} via gRPC")
+            except Exception as e:
+                logger.error(f"Failed to connect to {service_name}: {e}")
+    
+    async def _test_mcp_connections(self):
+        """Test MCP server connections"""
+        for server_name, base_url in self.mcp_servers.items():
+            try:
+                response = await self.http_client.get(f"{base_url}/health", timeout=5.0)
+                if response.status_code == 200:
+                    logger.info(f"MCP server {server_name} is healthy")
+                else:
+                    logger.warning(f"MCP server {server_name} returned {response.status_code}")
+            except Exception as e:
+                logger.error(f"Cannot reach MCP server {server_name}: {e}")
+    
+    async def get_products_direct_grpc(self) -> List[Dict]:
+        """Get products directly from productcatalogservice"""
+        if "productcatalog" not in self.grpc_stubs:
+            logger.warning("ProductCatalog gRPC stub not available")
+            return []
+            
+        try:
+            stub = self.grpc_stubs["productcatalog"]
+            request = demo_pb2.Empty()
+            response = await asyncio.wait_for(stub.ListProducts(request), timeout=10.0)
+            
+            products = []
+            for product in response.products:
+                products.append({
+                    "id": product.id,
+                    "name": product.name,
+                    "description": product.description,
+                    "picture": product.picture,
+                    "price": {
+                        "currency_code": product.price_usd.currency_code,
+                        "units": product.price_usd.units,
+                        "nanos": product.price_usd.nanos
+                    },
+                    "categories": list(product.categories)
+                })
+            
+            logger.info(f"Retrieved {len(products)} products via direct gRPC")
+            return products
+            
         except Exception as e:
-            print(f"Failed to connect to productcatalog service: {e}")
+            logger.error(f"Error getting products via gRPC: {e}")
             return []
     
-    async def check_service_health(self, service_name: str, endpoint: str) -> bool:
-        """Check if a microservice is available"""
+    async def get_products_via_mcp(self) -> List[Dict]:
+        """Get products via MCP server"""
         try:
-            async with httpx.AsyncClient(timeout=3.0) as client:
-                # Try different health check endpoints
-                health_urls = [
-                    f"http://{endpoint}/health",
-                    f"http://{endpoint}/healthz", 
-                    f"http://{endpoint}/"
-                ]
-                
-                for url in health_urls:
-                    try:
-                        response = await client.get(url)
-                        if response.status_code in [200, 404]:  # 404 is OK for services without health endpoint
-                            return True
-                    except:
-                        continue
-                        
-                return False
-        except:
+            response = await self.http_client.post(
+                f"{self.mcp_servers['product-catalog']}/list_products",
+                timeout=10.0
+            )
+            if response.status_code == 200:
+                data = response.json()
+                logger.info(f"Retrieved products via MCP: {len(data.get('products', []))} items")
+                return data.get("products", [])
+        except Exception as e:
+            logger.error(f"Error getting products via MCP: {e}")
+        return []
+    
+    async def get_all_products(self) -> List[Dict]:
+        """Get products using best available method"""
+        # Try direct gRPC first
+        products = await self.get_products_direct_grpc()
+        if products:
+            return products
+            
+        # Fallback to MCP
+        products = await self.get_products_via_mcp()
+        if products:
+            return products
+            
+        # Final fallback
+        return self._get_fallback_products()
+    
+    def _get_fallback_products(self) -> List[Dict]:
+        """Fallback products"""
+        return [
+            {"id": "OLJCESPC7Z", "name": "Sunglasses", "description": "Stylish sunglasses", 
+             "price": {"currency_code": "USD", "units": 19, "nanos": 990000000}},
+            {"id": "66VCHSJNUP", "name": "Tank Top", "description": "Cotton tank top",
+             "price": {"currency_code": "USD", "units": 18, "nanos": 990000000}},
+            {"id": "1YMWWN1N4O", "name": "Watch", "description": "Gold-tone watch",
+             "price": {"currency_code": "USD", "units": 109, "nanos": 990000000}}
+        ]
+    
+    async def add_to_cart_direct_grpc(self, user_id: str, product_id: str, quantity: int = 1) -> bool:
+        """Add item to cart via direct gRPC"""
+        if "cart" not in self.grpc_stubs:
+            logger.warning("Cart gRPC stub not available")
+            return False
+            
+        try:
+            stub = self.grpc_stubs["cart"]
+            cart_item = demo_pb2.CartItem(product_id=product_id, quantity=quantity)
+            request = demo_pb2.AddItemRequest(user_id=user_id, item=cart_item)
+            
+            await asyncio.wait_for(stub.AddItem(request), timeout=5.0)
+            logger.info(f"Added {product_id} to cart for {user_id} via gRPC")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error adding to cart via gRPC: {e}")
             return False
     
-    async def get_service_status(self) -> Dict[str, bool]:
-        """Check status of all microservices"""
-        status = {}
-        for service_name, endpoint in self.services.items():
-            status[service_name] = await self.check_service_health(service_name, endpoint)
-        return status
+    async def get_cart_direct_grpc(self, user_id: str) -> Dict:
+        """Get cart via direct gRPC"""
+        if "cart" not in self.grpc_stubs:
+            return {"items": [], "total": 0}
+            
+        try:
+            stub = self.grpc_stubs["cart"]
+            request = demo_pb2.GetCartRequest(user_id=user_id)
+            response = await asyncio.wait_for(stub.GetCart(request), timeout=5.0)
+            
+            items = []
+            for item in response.items:
+                items.append({"product_id": item.product_id, "quantity": item.quantity})
+            
+            return {"items": items, "total": len(items)}
+            
+        except Exception as e:
+            logger.error(f"Error getting cart via gRPC: {e}")
+            return {"items": [], "total": 0}
     
-    async def handle_customer_query(self, query: str, conversation_id: str) -> Dict:
-        """Main entry point with real service integration"""
+    def classify_intent(self, query: str) -> str:
+        """Improved intent classification"""
+        query_lower = query.lower().strip()
         
-        # Check service availability first
-        service_status = await self.get_service_status()
+        # Cart management keywords
+        cart_keywords = [
+            "cart", "add", "buy", "purchase", "show cart", "view cart", 
+            "my cart", "what's in my cart", "whats in my cart", "checkout"
+        ]
         
-        # Classify intent
-        intent = await self.classify_intent(query)
+        # Product search keywords  
+        product_keywords = [
+            "product", "find", "search", "show", "recommend", "looking",
+            "available", "catalog", "list", "browse"
+        ]
         
-        # Route to appropriate handler with service status
-        if intent == "product_search":
-            response = await self.handle_product_search(query, conversation_id, service_status)
-        elif intent == "order_status":
-            response = await self.handle_order_inquiry(query, conversation_id, service_status)
-        elif intent == "cart_management":
-            response = await self.handle_cart_operations(query, conversation_id, service_status)
-        elif intent == "recommendations":
-            response = await self.handle_recommendations(query, conversation_id, service_status)
+        # Check for cart intent
+        if any(keyword in query_lower for keyword in cart_keywords):
+            return "cart_management"
+            
+        # Check for product search intent
+        if any(keyword in query_lower for keyword in product_keywords):
+            return "product_search"
+        
+        # Check if query is just a product name
+        products = self._get_fallback_products()  # Quick check with known products
+        for product in products:
+            if product["name"].lower() in query_lower:
+                return "cart_management"  # Assume they want to add it
+                
+        return "general"
+    
+    async def handle_query(self, query: str, conversation_id: str) -> Dict:
+        """Main query handler"""
+        intent = self.classify_intent(query)
+        logger.info(f"Query: '{query}' -> Intent: '{intent}'")
+        
+        if intent == "cart_management":
+            if any(word in query.lower() for word in ["add", "buy", "purchase"]) or self._is_product_name(query):
+                response = await self._handle_add_to_cart(query, conversation_id)
+            elif any(word in query.lower() for word in ["show", "view", "cart"]):
+                response = await self._handle_show_cart(conversation_id)
+            else:
+                response = "I can help you add items to your cart or show your current cart. What would you like to do?"
+        elif intent == "product_search":
+            response = await self._handle_product_search(query)
         else:
-            response = await self.handle_general_query(query, service_status)
+            response = await self._handle_general_query(query)
         
         return {
             "response": response,
             "intent": intent,
             "agent": self.agent_id,
             "conversation_id": conversation_id,
-            "timestamp": datetime.now().isoformat(),
-            "service_status": service_status
+            "timestamp": datetime.now().isoformat()
         }
     
-    async def classify_intent(self, query: str) -> str:
-        """Intent classification"""
+    def _is_product_name(self, query: str) -> bool:
+        """Check if query is just a product name"""
+        query_lower = query.lower().strip()
+        product_names = ["sunglasses", "tank top", "watch", "hairdryer", "loafers"]
+        return query_lower in product_names
+    
+    async def _handle_add_to_cart(self, query: str, conversation_id: str) -> str:
+        """Handle add to cart requests"""
+        products = await self.get_all_products()
         query_lower = query.lower()
         
-        if any(word in query_lower for word in [
-            'product', 'buy', 'find', 'search', 'show', 'looking',
-            'shoes', 'shirt', 'clothing', 'item', 'gift', 'camera'
-        ]):
-            return "product_search"
-        elif any(word in query_lower for word in [
-            'order', 'track', 'delivery', 'shipping', 'status'
-        ]):
-            return "order_status"
-        elif any(word in query_lower for word in [
-            'cart', 'add', 'remove', 'checkout'
-        ]):
-            return "cart_management"
-        elif any(word in query_lower for word in [
-            'recommend', 'popular', 'bestseller', 'trending'
-        ]):
-            return "recommendations"
-        
-        return "general"
-    
-    async def handle_product_search(self, query: str, conversation_id: str, service_status: Dict) -> str:
-        """Handle product search with real data"""
-        
-        # Try to get real products first
-        products = await self.get_real_products()
-        
-        if products and service_status.get('productcatalog', False):
-            # We have real product data
-            filtered_products = self.filter_products_by_query(products, query)
-            return self.format_product_response(filtered_products, query, is_real_data=True)
-        else:
-            # Fallback to sample data with service status
-            return self.get_fallback_products(query, service_status)
-    
-    def filter_products_by_query(self, products: List[Dict], query: str) -> List[Dict]:
-        """Filter products based on query"""
-        query_lower = query.lower()
-        filtered = []
-        
+        # Find matching product
+        matched_product = None
         for product in products:
-            # Check name, description, categories
-            if (any(word in product["name"].lower() for word in query_lower.split()) or
-                any(word in product["description"].lower() for word in query_lower.split()) or
-                any(any(word in cat.lower() for word in query_lower.split()) for cat in product["categories"])):
-                filtered.append(product)
+            product_words = product["name"].lower().split()
+            if any(word in query_lower for word in product_words) or product["name"].lower() in query_lower:
+                matched_product = product
+                break
         
-        # If no specific matches, return all products
-        if not filtered:
-            filtered = products[:3]
-            
-        return filtered
+        if matched_product:
+            success = await self.add_to_cart_direct_grpc(conversation_id, matched_product["id"], 1)
+            if success:
+                price = matched_product["price"]["units"] + (matched_product["price"]["nanos"] / 1e9)
+                return f"Successfully added {matched_product['name']} (${price:.2f}) to your cart! The item has been added to your actual shopping cart."
+            else:
+                return f"I found {matched_product['name']} but couldn't add it to your cart. The cart service may be temporarily unavailable."
+        else:
+            available_products = [p["name"] for p in products[:5]]
+            return f"I can add these products to your cart: {', '.join(available_products)}. Which would you like?"
     
-    def format_product_response(self, products: List[Dict], query: str, is_real_data: bool = False) -> str:
-        """Format product response"""
+    async def _handle_show_cart(self, conversation_id: str) -> str:
+        """Handle show cart requests"""
+        cart = await self.get_cart_direct_grpc(conversation_id)
         
-        if not products:
-            return "I couldn't find any products matching your search."
+        if cart["total"] == 0:
+            return "Your cart is empty. Would you like to browse our products?"
         
-        data_source = "🔴 Live ProductCatalogService" if is_real_data else "⚠️ Sample Data (Service Unavailable)"
+        products = await self.get_all_products()
+        product_dict = {p["id"]: p for p in products}
         
-        response = f"**🛍️ Product Search Results:**\n\n"
+        response = f"Your cart contains {cart['total']} items:\n"
+        total_cost = 0
         
-        for i, product in enumerate(products[:5], 1):
-            price = product["price"]
-            price_str = f"${price['units']}.{str(price['nanos'])[:2].zfill(2)}"
-            
-            response += f"**{i}. {product['name']}** - {price_str}\n"
-            response += f"   {product['description']}\n"
-            response += f"   Categories: {', '.join(product['categories'])}\n"
-            response += f"   Product ID: `{product['id']}`\n\n"
+        for item in cart["items"]:
+            if item["product_id"] in product_dict:
+                product = product_dict[item["product_id"]]
+                price = product["price"]["units"] + (product["price"]["nanos"] / 1e9)
+                item_total = price * item["quantity"]
+                total_cost += item_total
+                response += f"- {product['name']} x{item['quantity']} = ${item_total:.2f}\n"
         
-        response += f"*{data_source}*\n\n"
-        response += "💡 **Next steps:**\n"
-        response += "• Say 'add [product name] to cart'\n"
-        response += "• Ask for 'more details about [product]'\n"
-        response += "• Request 'similar products'"
-        
+        response += f"\nTotal: ${total_cost:.2f}"
         return response
     
-    def get_fallback_products(self, query: str, service_status: Dict) -> str:
-        """Fallback when services are unavailable"""
+    async def _handle_product_search(self, query: str = "") -> str:
+        """Handle product search requests"""
+        products = await self.get_all_products()
         
-        status_info = "\n".join([f"• {name}: {'🟢 Online' if status else '🔴 Offline'}" 
-                                for name, status in service_status.items()])
+        if not products:
+            return "I'm having trouble accessing our product catalog right now. Please try again in a moment."
         
-        return f"""**⚠️ Service Status Update:**
-
-**Microservice Status:**
-{status_info}
-
-**Sample Products (Demo Mode):**
-
-**1. Vintage Camera Lens** - $89.99
-   Professional photography equipment
-   
-**2. Air Plant Terrarium** - $94.99
-   Self-sustaining plant ecosystem
-   
-**3. Classic Typewriter** - $67.99
-   Restored vintage office equipment
-
-*🔄 Attempting to reconnect to ProductCatalogService...*
-*💡 These are sample products while services are being restored.*"""
+        response = f"Here are our available products ({len(products)} items):\n\n"
+        for product in products:
+            price = product["price"]["units"] + (product["price"]["nanos"] / 1e9)
+            response += f"- **{product['name']}**: ${price:.2f}\n  {product['description']}\n\n"
+        
+        response += "To add any item to your cart, just say 'add [product name] to cart'!"
+        return response
     
-    async def handle_general_query(self, query: str, service_status: Dict) -> str:
-        """Handle general queries with service status"""
+    async def _handle_general_query(self, query: str) -> str:
+        """Handle general queries"""
+        if GEMINI_AVAILABLE:
+            try:
+                model = genai.GenerativeModel('gemini-pro')
+                ai_prompt = f"You are a helpful customer service agent for an online boutique. Respond to: '{query}'. Be helpful and mention you can help with products and cart management."
+                ai_response = model.generate_content(ai_prompt)
+                return ai_response.text
+            except Exception as e:
+                logger.error(f"Gemini AI error: {e}")
         
-        service_count = sum(service_status.values())
-        total_services = len(service_status)
-        
-        status_emoji = "🟢" if service_count == total_services else "🟡" if service_count > 0 else "🔴"
-        
-        return f"""**👋 Welcome to Online Boutique!**
+        return "Hello! I'm your customer service assistant. I can help you find products, manage your cart, and answer questions. How can I assist you today?"
 
-**System Status:** {status_emoji} {service_count}/{total_services} services online
+# Global agent
+agent = CustomerServiceAgent()
 
-**Available Services:**
-- Product search & recommendations
-- Order tracking & management  
-- Cart operations & checkout
-- Store information & support
+# FastAPI app
+app = FastAPI(title="Customer Service Agent")
 
-**Microservice Health:**
-- ProductCatalog: {'🟢' if service_status.get('productcatalog') else '🔴'}
-- Cart Service: {'🟢' if service_status.get('cart') else '🔴'}
-- Recommendations: {'🟢' if service_status.get('recommendation') else '🔴'}
-- Currency Service: {'🟢' if service_status.get('currency') else '🔴'}
-
-What can I help you find today?"""
-
-# Initialize FastAPI app
-app = FastAPI(
-    title="Customer Service Agent API",
-    description="Production AI Customer Service with Real Microservice Integration",
-    version="1.0.0"
-)
-
-# Initialize agent
-agent = CustomerServiceAgent(
-    project_id=os.getenv("PROJECT_ID", "gke10-final"),
-    region=os.getenv("REGION", "us-central1")
-)
-
-# API Endpoints
-@app.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest):
-    """Main chat endpoint with real service integration"""
-    try:
-        result = await agent.handle_customer_query(request.query, request.conversation_id)
-        
-        return ChatResponse(
-            response=result["response"],
-            conversation_id=result["conversation_id"],
-            agent=result["agent"],
-            intent=result["intent"]
-        )
-        
-    except Exception as e:
-        print(f"Chat error: {e}")
-        return ChatResponse(
-            response="I'm experiencing technical difficulties connecting to our services. Please try again in a moment.",
-            conversation_id=request.conversation_id,
-            agent="customer-service",
-            intent="error"
-        )
+@app.on_event("startup")
+async def startup_event():
+    await agent.initialize_connections()
 
 @app.get("/health")
 async def health_check():
-    """Health check with service status"""
-    service_status = await agent.get_service_status()
-    
     return {
         "status": "healthy",
-        "service": "Customer Service Agent",
-        "agent_id": agent.agent_id,
-        "microservice_status": service_status,
-        "timestamp": datetime.now().isoformat(),
-        "version": "1.0.0"
+        "grpc_available": GRPC_AVAILABLE,
+        "gemini_available": GEMINI_AVAILABLE
     }
 
-@app.get("/")
-async def root():
-    """Root endpoint"""
-    return {
-        "service": "Customer Service Agent",
-        "version": "1.0.0",
-        "agent_id": agent.agent_id,
-        "status": "running",
-        "integration": "Real microservice connections"
-    }
+@app.post("/chat", response_model=ChatResponse)
+async def chat_endpoint(chat_request: ChatRequest):
+    try:
+        result = await agent.handle_query(chat_request.query, chat_request.conversation_id)
+        return ChatResponse(**result)
+    except Exception as e:
+        logger.error(f"Chat error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 if __name__ == "__main__":
     import uvicorn

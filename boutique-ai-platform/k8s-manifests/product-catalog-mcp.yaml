@@ -5,7 +5,7 @@ metadata:
   labels:
     app: product-catalog-mcp
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: product-catalog-mcp
@@ -16,28 +16,44 @@ spec:
     spec:
       containers:
       - name: product-catalog-mcp
-        image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/boutique-ai-repo/product-catalog-mcp:latest
+        image: us-central1-docker.pkg.dev/gke10-final/boutique-ai-repo/product-catalog-mcp:latest
+        imagePullPolicy: Always
         ports:
-        - containerPort: 8000
+        - containerPort: 8080
         env:
-        - name: PRODUCT_CATALOG_SERVICE_ENDPOINT
-          value: "productcatalogservice:3550"
+        - name: PORT
+          value: "8080"
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "100m"
+            cpu: 100m
+            memory: 256Mi
           limits:
-            memory: "256Mi"
-            cpu: "250m"
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: product-catalog-mcp
+  labels:
+    app: product-catalog-mcp
 spec:
   selector:
     app: product-catalog-mcp
   ports:
-  - port: 8000
-    targetPort: 8000
+  - name: http
+    port: 8080
+    targetPort: 8080
   type: ClusterIP

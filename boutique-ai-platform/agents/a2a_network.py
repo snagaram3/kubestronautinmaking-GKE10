@@ -1,100 +1,117 @@
-from fastapi import FastAPI, WebSocket, HTTPException
-from typing import Dict, List, Set
+"""A2A Network for agent-to-agent and MCP communication"""
+
 import asyncio
 import json
-import uuid
-from dataclasses import dataclass, asdict
-from datetime import datetime
+import logging
+from typing import Dict, List, Any, Optional
+import httpx
 
-@dataclass
-class AgentMessage:
-    id: str
-    content: str
-    sender_agent: str
-    target_agent: str
-    conversation_id: str
-    timestamp: str
-    message_type: str = "request"
+logger = logging.getLogger(__name__)
 
 class A2ANetwork:
+    """Agent-to-Agent network with MCP server communication"""
+    
     def __init__(self):
-        self.registered_agents: Dict[str, WebSocket] = {}
-        self.message_history: List[AgentMessage] = []
+        self.agents = {}
+        self.mcp_servers = {}
+        self.http_client = httpx.AsyncClient()
         
-    async def register_agent(self, agent_id: str, websocket: WebSocket):
-        """Register an agent with the A2A network"""
-        await websocket.accept()
-        self.registered_agents[agent_id] = websocket
-        print(f"Agent {agent_id} registered with A2A network")
+    async def register_agent(self, agent_id: str, agent_instance):
+        """Register an agent in the network"""
+        self.agents[agent_id] = agent_instance
+        logger.info(f"Registered agent: {agent_id}")
+    
+    async def register_mcp_server(self, server_name: str, base_url: str):
+        """Register an MCP server endpoint"""
+        self.mcp_servers[server_name] = base_url
+        logger.info(f"Registered MCP server: {server_name} at {base_url}")
+    
+    async def call_mcp_tool(self, server_name: str, tool_name: str, arguments: Dict = None) -> Optional[Dict]:
+        """Call a tool on an MCP server via HTTP"""
+        if server_name not in self.mcp_servers:
+            logger.error(f"MCP server {server_name} not registered")
+            return None
+        
+        base_url = self.mcp_servers[server_name]
+        url = f"{base_url}/{tool_name}"
         
         try:
-            while True:
-                # Keep connection alive and handle incoming messages
-                data = await websocket.receive_text()
-                message_data = json.loads(data)
-                await self.route_message(message_data)
-        except Exception as e:
-            print(f"Agent {agent_id} disconnected: {e}")
-        finally:
-            if agent_id in self.registered_agents:
-                del self.registered_agents[agent_id]
-    
-    async def route_message(self, message_data: Dict):
-        """Route message between agents"""
-        message = AgentMessage(**message_data)
-        self.message_history.append(message)
-        
-        target_agent = message.target_agent
-        if target_agent in self.registered_agents:
-            target_socket = self.registered_agents[target_agent]
-            await target_socket.send_text(json.dumps(asdict(message)))
-        else:
-            print(f"Target agent {target_agent} not found")
-    
-    async def send_message(self, sender: str, target: str, content: str, conversation_id: str) -> str:
-        """Send message and wait for response"""
-        message_id = str(uuid.uuid4())
-        message = AgentMessage(
-            id=message_id,
-            content=content,
-            sender_agent=sender,
-            target_agent=target,
-            conversation_id=conversation_id,
-            timestamp=datetime.now().isoformat()
-        )
-        
-        if target in self.registered_agents:
-            target_socket = self.registered_agents[target]
-            await target_socket.send_text(json.dumps(asdict(message)))
+            # Make HTTP request to MCP server
+            if arguments:
+                response = await self.http_client.post(url, json=arguments)
+            else:
+                response = await self.http_client.post(url)
             
-            # Wait for response (simplified - in production, use proper async handling)
-            return f"Response from {target}"
+            response.raise_for_status()
+            result = response.json()
+            
+            logger.info(f"Successfully called {tool_name} on {server_name}")
+            return result
+            
+        except httpx.RequestError as e:
+            logger.error(f"Network error calling {tool_name} on {server_name}: {e}")
+            return None
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error calling {tool_name} on {server_name}: {e.response.status_code}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error calling {tool_name} on {server_name}: {e}")
+            return None
+    
+    async def agent_communication(self, from_agent: str, to_agent: str, message: Dict) -> Dict:
+        """Direct agent-to-agent communication"""
+        if to_agent not in self.agents:
+            return {"error": f"Agent {to_agent} not found"}
+        
+        target_agent = self.agents[to_agent]
+        if hasattr(target_agent, 'handle_a2a_message'):
+            try:
+                return await target_agent.handle_a2a_message(from_agent, message)
+            except Exception as e:
+                return {"error": f"Error in A2A communication: {e}"}
         else:
-            raise HTTPException(status_code=404, detail=f"Agent {target} not available")
+            return {"error": f"Agent {to_agent} does not support A2A communication"}
+    
+    async def broadcast_message(self, from_agent: str, message: Dict) -> Dict:
+        """Broadcast message to all registered agents"""
+        results = {}
+        for agent_id, agent in self.agents.items():
+            if agent_id != from_agent and hasattr(agent, 'handle_a2a_message'):
+                try:
+                    result = await agent.handle_a2a_message(from_agent, message)
+                    results[agent_id] = result
+                except Exception as e:
+                    results[agent_id] = {"error": str(e)}
+        return results
+    
+    async def health_check(self) -> Dict:
+        """Check health of all registered MCP servers"""
+        health_status = {}
+        
+        for server_name, base_url in self.mcp_servers.items():
+            try:
+                response = await self.http_client.get(f"{base_url}/health", timeout=5.0)
+                if response.status_code == 200:
+                    health_status[server_name] = {"status": "healthy", "details": response.json()}
+                else:
+                    health_status[server_name] = {"status": "unhealthy", "status_code": response.status_code}
+            except Exception as e:
+                health_status[server_name] = {"status": "unreachable", "error": str(e)}
+        
+        return health_status
+    
+    async def shutdown(self):
+        """Clean shutdown"""
+        await self.http_client.aclose()
+        self.agents.clear()
+        self.mcp_servers.clear()
 
-app = FastAPI(title="A2A Communication Network")
+# Global A2A network instance
 a2a_network = A2ANetwork()
 
-@app.websocket("/ws/{agent_id}")
-async def websocket_endpoint(websocket: WebSocket, agent_id: str):
-    """WebSocket endpoint for agent registration"""
-    await a2a_network.register_agent(agent_id, websocket)
-
-@app.post("/send_message")
-async def send_message(
-    sender: str,
-    target: str,
-    content: str,
-    conversation_id: str
-):
-    """HTTP endpoint for sending messages between agents"""
-    return await a2a_network.send_message(sender, target, content, conversation_id)
-
-@app.get("/agents")
-async def list_agents():
-    """List all registered agents"""
-    return {"registered_agents": list(a2a_network.registered_agents.keys())}
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "service": "A2A Network"}
+# Auto-register known MCP servers
+async def initialize_mcp_connections():
+    """Initialize connections to known MCP servers"""
+    await a2a_network.register_mcp_server("product-catalog-mcp", "http://product-catalog-mcp:8080")
+    # Add other MCP servers as needed
+    logger.info("Initialized MCP server connections")
