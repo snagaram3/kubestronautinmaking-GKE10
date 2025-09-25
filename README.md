@@ -187,6 +187,8 @@ Before running scripts:
 ```bash
 chmod +x boutique-ai-platform/deploy.sh
 ```
+This will deploy all the AI-agents and also start the MCP & A2A networks. Additionally, this will generate a frontend proxy that brings the AI Assist chat widget to the storefront.
+
 Monitoring & Debugging
 Check service status
 ```bash
