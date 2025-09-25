@@ -146,64 +146,74 @@ To remove the individual resources created for by Terraform without deleting the
    1. If there is a confirmation prompt, type `yes` and hit Enter/Return.
 
 
-AI-Enhanced Online Boutique Deployment
+## AI-Enhanced Online Boutique Deployment Steps
 
 This document provides scripts and instructions to deploy the AI-Enhanced Online Boutique on Google Kubernetes Engine (GKE).
 
+### Env setup 
+
 Environment and Frontend Setup
 1. 1. Set environment variables
+```bash
 export PROJECT_ID="your-project-id"
 export REGION="us-central1"
 export CLUSTER_NAME="ai-boutique-hackathon"
 export GEMINI_API_KEY="your-gemini-api-key"
-
+```
 2. 2. Set project
+```bash
 gcloud config set project $PROJECT_ID
-
+```
 3. 3. Enable required APIs
+```bash
 gcloud services enable \
    container.googleapis.com \
    artifactregistry.googleapis.com \
    aiplatform.googleapis.com \
    compute.googleapis.com
-
+```
 4. 4. Create GKE cluster
+```bash
 ./boutique-ai-platform/deploy.sh
-
+```
 5. 5. Get cluster credentials
+```bash
 gcloud container clusters get-credentials $CLUSTER_NAME --region=$REGION
-
+```
+### Deploy script
 
 Deployment Options
 Before running scripts:
-
+```bash
 chmod +x boutique-ai-platform/deploy.sh
-
+```
 Monitoring & Debugging
 Check service status
-
+```bash
 kubectl get services --all-namespaces
 kubectl get service api-gateway -n ai-agents
 kubectl get service frontend-external
-
+```
 Check pod status
-
+```bash
 kubectl get pods --all-namespaces
-
+```
 View logs
-
+```bash
 kubectl logs deployment/mcp-server -n ai-agents -f
 kubectl logs deployment/a2a-orchestrator -n ai-agents -f
 kubectl logs deployment/api-gateway -n ai-agents -f
-
-Cleanup
+```
+### Cleanup
 manually delete the namespace:
-
+```bash
 kubectl delete namespace ai-agents
-
+```
 
 Demo Application without AI:
 Demo Application with AI:
 
 Video recording of the demo:
-Artical published and its url:
+Article published and its url: https://youtu.be/M1M7AjR55oA?si=vq6LESxksWQX3EwM
+https://medium.com/@srihari.ec09/building-smart-agents-on-gke-for-gkehackathon-gketurns10-b02b9f6b029d
+https://dly.to/axkIq8i464e
