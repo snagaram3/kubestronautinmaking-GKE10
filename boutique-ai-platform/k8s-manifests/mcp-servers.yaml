@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-catalog-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-catalog-mcp
+  template:
+    metadata:
+      labels:
+        app: product-catalog-mcp
+    spec:
+      containers:
+      - name: mcp
+        image: python:3.11-slim
+        ports:
+        - containerPort: 8000
+        command: ["/bin/bash"]
+        args:
+          - -c
+          - |
+            pip install fastapi uvicorn grpcio grpcio-tools &&
+            cd /app &&
+            python product_catalog_mcp.py
+        volumeMounts:
+        - name: code
+          mountPath: /app
+      volumes:
+      - name: code
+        configMap:
+          name: mcp-code
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-catalog-mcp
+spec:
+  selector:
+    app: product-catalog-mcp
+  ports:
+  - port: 8000
+    targetPort: 8000
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcp-code
+data:
+  product_catalog_mcp.py: |
+    # Your fixed product_catalog_mcp.py code here

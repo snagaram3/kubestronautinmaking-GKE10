@@ -2,18 +2,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y build-essential && rm -rf /var/lib/apt/lists/*
+RUN pip install --upgrade pip
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the agent file
-COPY agents/customer_service_agent.py .
+COPY protos/ ./protos/
+COPY agents/a2a_network.py ./a2a_network.py
+COPY agents/customer_service_agent.py ./customer_service_agent.py
 
-# Copy gRPC proto files if they exist
-#COPY protos/ ./protos/ 2>/dev/null || true
-# Copy protos only if directory exists
-COPY protos* ./protos/
+ENV PYTHONPATH="/app/protos"
 
 EXPOSE 8080
 
-# Use python directly to run the module
 CMD ["python", "customer_service_agent.py"]
